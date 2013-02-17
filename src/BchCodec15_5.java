@@ -189,7 +189,34 @@ public class BchCodec15_5 {
         if ( remainder !=- expectRemainder) {
             return false;
         }
-        
+
+        BchCodec15_5 coder = new BchCodec15_5();
+
+        short codeTest = coder.encode( (byte)testVal );
+        byte decodeTest = coder.decode(codeTest);
+
+        if ( decodeTest != testVal ) {
+            System.err.println(" Encode / Decode " + testVal +" failed. Got " + decodeTest);
+            return false;
+        }
+        decodeTest = coder.decode((short)(codeTest ^ ( 1 << 5)));
+        if ( decodeTest != testVal ) {
+            System.err.println(" Encode / Decode 1 bit err " + testVal +" failed. Got " + decodeTest);
+            return false;
+        }
+
+        decodeTest = coder.decode((short)(codeTest ^ ( 1 << 5) ^ (1 << 10) ^( 1 << 7)));
+        if ( decodeTest != testVal ) {
+            System.err.println(" Encode / Decode 3 bit errs " + testVal +" failed. Got " + decodeTest);
+            return false;
+        }
+
+        decodeTest = coder.decode( (short)(codeTest ^ ( 1 + 2 + 4 + 16)) );
+        if ( decodeTest != -1 ) {
+            System.err.println(" Encode / Decode 4 bit errs " + testVal +" failed. Got " + decodeTest);
+            return false;
+        }
+
         return true;
     }
 }
