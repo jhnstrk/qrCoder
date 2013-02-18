@@ -3,7 +3,12 @@ import java.util.Vector;
 public class QrCode {
     final int m_size = 29;
 
+    // char-to-number encoding.
+    final String alphaTable5 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+
     byte m_codeHolder[];
+
+    final int modulus = BinaryHelper.fromBinaryString("100011101");
 
     class BitHolder {
         public int m_bitPos[];
@@ -25,6 +30,9 @@ public class QrCode {
 
     public QrCode() {
         m_codeHolder = new byte[m_size*m_size];
+        m_bitLookupD = new Vector<BitHolder>(); // 1 to 55 
+        m_bitLookupE = new Vector<BitHolder>(); // 1 to 15
+        fillBitLookups();
     }
 
     byte getBit( int row, int col){
@@ -71,5 +79,52 @@ public class QrCode {
                 );
     }
 
+    BitHolder downGroup(int tlRow, int tlCol)
+    {
+        return new BitHolder (
+                indexFromRC(tlRow+3,tlCol),
+                indexFromRC(tlRow+3,tlCol+1),
+                indexFromRC(tlRow+2,tlCol),
+                indexFromRC(tlRow+2,tlCol+1),
+                indexFromRC(tlRow+1,tlCol),
+                indexFromRC(tlRow+1,tlCol+1),
+                indexFromRC(tlRow,tlCol),
+                indexFromRC(tlRow,tlCol+1)
+                );
+    }
 
+    BitHolder upToDownGroup(int tlRow, int tlCol)
+    {
+        return new BitHolder (
+                indexFromRC(tlRow+1,tlCol),
+                indexFromRC(tlRow+1,tlCol+1),
+                indexFromRC(tlRow,tlCol),
+                indexFromRC(tlRow,tlCol+1),
+                indexFromRC(tlRow,tlCol+2),
+                indexFromRC(tlRow,tlCol+3),
+                indexFromRC(tlRow+1,tlCol+2),
+                indexFromRC(tlRow+1,tlCol+3)
+                );
+    }
+
+    BitHolder downToUpGroup(int tlRow, int tlCol)
+    {
+        return new BitHolder (
+                indexFromRC(tlRow,tlCol),
+                indexFromRC(tlRow,tlCol+1),
+                indexFromRC(tlRow+1,tlCol),
+                indexFromRC(tlRow+1,tlCol+1),
+                indexFromRC(tlRow+1,tlCol+2),
+                indexFromRC(tlRow+1,tlCol+3),
+                indexFromRC(tlRow,tlCol+2),
+                indexFromRC(tlRow,tlCol+3)
+                );
+    }
+
+
+    void fillBitLookups() 
+    {
+        // TODO : Fill this.
+        this.m_bitLookupD.add(this.upGroup(25, 27));
+    }
 }

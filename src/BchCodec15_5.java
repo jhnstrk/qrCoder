@@ -11,7 +11,7 @@ public class BchCodec15_5 {
 
     public BchCodec15_5()
     {
-        System.out.println( "Generator : " + asBinaryString(genPoly) );
+        System.out.println( "Generator : " + BinaryHelper.asBinaryString(genPoly) );
 
         lut = new byte[codeWordEnd];
         for ( int i = 0; i < codeWordEnd; ++i) {
@@ -23,7 +23,8 @@ public class BchCodec15_5 {
             short codeWord = this.encode( codeVal );
             lut[codeWord] = codeVal;
 
-            System.out.println( asBinaryString(codeVal) + " -> " + asBinaryString(codeWord) );
+            System.out.println( BinaryHelper.asBinaryString(codeVal) + " -> "
+                + BinaryHelper.asBinaryString(codeWord) );
 
             // Add bit errors
             for ( int i = 0; i<codeWordLen; ++i){
@@ -39,9 +40,9 @@ public class BchCodec15_5 {
                         byte newVal = (byte)(codeVal | ( bitCount << dataLen ));
                         if ( lut[codeWithErrors] != -1 && ( lut[codeWithErrors] != newVal) ) {
                             System.err.println("Collision : "
-                                    + asBinaryString(codeWord)
-                                    + " ^ " + asBinaryString(errCodeWordK,16)
-                                    + " = " + asBinaryString(codeWithErrors,16)
+                                    + BinaryHelper.asBinaryString(codeWord)
+                                    + " ^ " + BinaryHelper.asBinaryString(errCodeWordK,16)
+                                    + " = " + BinaryHelper.asBinaryString(codeWithErrors,16)
                                     );
                         }
                         lut[codeWithErrors] = newVal;
@@ -99,92 +100,30 @@ public class BchCodec15_5 {
         return (short)(codedVal | (maskedCode << 10));
     }
 
-    public static int nonZeroBitCount( int num )
-    {
-        int count = 0;
-        for ( int i=0; i < 32; ++i ) {
-            count +=  ((num >> i ) & 1); 
-        }
-        return count;
-    }
-
-    public static String asBinaryString( byte num )
-    {
-        return asBinaryString( (int)num, 8);
-    }
-
-    public static String asBinaryString( short num )
-    {
-        return asBinaryString( (int)num, 16);
-    }
-
-    public static String asBinaryString( int num, int len )
-    {
-        String str = new String();
-        len = Math.min(len,32);
-        for ( int i=0; i < len; ++i ) {
-            if ( ( (num >> (len - 1 - i)) & 1 ) == 0 ) {
-                str += "0";
-            } else {
-                str += "1";
-            }
-        }
-        str += "(" + num +")";
-        return str;
-    }
-    
-    public static int fromBinaryString(String str)
-    {
-        int num = 0;
-        for ( int i=0; i<str.length(); ++i)
-        {
-            if ( str.charAt(i) == '1' ) {
-                num = (num << 1) | 1;
-            } else if ( str.charAt(i) == '0'){
-                num = (num << 1);
-            } else if ( str.charAt(i) != ' '){
-                return num;  // Stop at first non 0 / 1 / 
-            }
-        }
-        return num;
-    }
-
-    public static int highBitPos( int val )
-    {
-        if (val == 0 ) {
-            return -1;
-        }
-        int num = 31;
-        while ( ((val >>> num) & 1) == 0 ) {
-            --num;
-        }
-        return num;
-    }
-
     public static boolean test()
     {
         //BchCodec15_5 coder = new BchCodec15_5();
         int testVal = 123;
-        String testStr = BchCodec15_5.asBinaryString(testVal, 17);
-        int testVal2   = BchCodec15_5.fromBinaryString(testStr);
+        String testStr = BinaryHelper.asBinaryString(testVal, 17);
+        int testVal2   = BinaryHelper.fromBinaryString(testStr);
         if ( testVal != testVal2 ) {
             return false;
         }
 
-        if ( BchCodec15_5.nonZeroBitCount(1) != 1)
+        if ( BinaryHelper.nonZeroBitCount(1) != 1)
             return false;
 
-        if ( BchCodec15_5.nonZeroBitCount((1<<4) | (1<<2) ) != 2)
+        if ( BinaryHelper.nonZeroBitCount((1<<4) | (1<<2) ) != 2)
             return false;
 
-        if ( BchCodec15_5.highBitPos((1<<4)) != 4)
+        if ( BinaryHelper.highBitPos((1<<4)) != 4)
             return false;
 
-        testVal = BchCodec15_5.fromBinaryString("1000111110101111");
-        int testValNum = BchCodec15_5.fromBinaryString("1000001000000000000000");
+        testVal = BinaryHelper.fromBinaryString("1000111110101111");
+        int testValNum = BinaryHelper.fromBinaryString("1000001000000000000000");
 
         int remainder = Poly2.mod( testValNum ,testVal );
-        int expectRemainder =BchCodec15_5.fromBinaryString("100101000100010");
+        int expectRemainder = BinaryHelper.fromBinaryString("100101000100010");
         
         if ( remainder !=- expectRemainder) {
             return false;

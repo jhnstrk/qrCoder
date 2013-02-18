@@ -110,11 +110,11 @@ public class Poly2 {
             pass = false;
         }
 
-        int testVal = BchCodec15_5.fromBinaryString("1000111110101111"); // 36783
-        int testValNum = BchCodec15_5.fromBinaryString("1000001000000000000000"); //2129920
+        int testVal = BinaryHelper.fromBinaryString("1000111110101111"); // 36783
+        int testValNum = BinaryHelper.fromBinaryString("1000001000000000000000"); //2129920
 
         int remainder = mod(testValNum, testVal);
-        int expectRemainder =BchCodec15_5.fromBinaryString("100101000100010"); // 18798
+        int expectRemainder =BinaryHelper.fromBinaryString("100101000100010"); // 18798
         if ( remainder != expectRemainder) {
             System.err.println(" Failed 1000001000000000000000 / 1000111110101111 ==  ? rem 100101000100010");
             pass = false;
