@@ -24,19 +24,19 @@ public class QrCode {
         }
     }
 
-    
+
     Vector<BitHolder> m_bitLookupD;
     Vector<BitHolder> m_bitLookupE;
 
     public QrCode() {
         m_codeHolder = new byte[m_size*m_size];
-        m_bitLookupD = new Vector<BitHolder>(); // 1 to 55 
+        m_bitLookupD = new Vector<BitHolder>(); // 1 to 55
         m_bitLookupE = new Vector<BitHolder>(); // 1 to 15
         fillBitLookups();
     }
 
     byte getBit( int row, int col){
-        if ( (row >= m_size ) || (row < 0) || 
+        if ( (row >= m_size ) || (row < 0) ||
              (col >= m_size ) || (col < 0) ) {
 
             System.err.printf("Out of bounds read at %i, %j", row, col);
@@ -46,7 +46,7 @@ public class QrCode {
     }
 
     void setBit( int row, int col, byte value){
-        if ( (row >= m_size ) || (row < 0) || 
+        if ( (row >= m_size ) || (row < 0) ||
              (col >= m_size ) || (col < 0) ) {
 
             System.err.printf("Out of bounds read at %i, %j", row, col);
@@ -122,7 +122,7 @@ public class QrCode {
     }
 
 
-    void fillBitLookups() 
+    void fillBitLookups()
     {
         // TODO : Fill this.
         this.m_bitLookupD.add(this.upGroup(25, 27));
