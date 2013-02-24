@@ -4,19 +4,19 @@ public class BinaryHelper {
     {
         int count = 0;
         for ( int i=0; i < 32; ++i ) {
-            count +=  ((num >> i ) & 1); 
+            count +=  ((num >> i ) & 1);
         }
         return count;
     }
 
     public static String asBinaryString( byte num )
     {
-        return asBinaryString( (int)num, 8);
+        return asBinaryString( num & 0xFF, 8);
     }
 
     public static String asBinaryString( short num )
     {
-        return asBinaryString( (int)num, 16);
+        return asBinaryString( num & 0xFFFF, 16);
     }
 
     public static String asBinaryString( int num, int len )
@@ -33,7 +33,7 @@ public class BinaryHelper {
         str += "(" + num +")";
         return str;
     }
-    
+
     public static int fromBinaryString(String str)
     {
         int num = 0;
@@ -44,7 +44,7 @@ public class BinaryHelper {
             } else if ( str.charAt(i) == '0'){
                 num = (num << 1);
             } else if ( str.charAt(i) != ' '){
-                return num;  // Stop at first non 0 / 1 / 
+                return num;  // Stop at first non 0 / 1 /
             }
         }
         return num;
