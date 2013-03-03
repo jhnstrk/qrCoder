@@ -50,6 +50,18 @@ public class BinaryHelper {
         return num;
     }
 
+    public static byte[] byteFromBinaryStringArray(String[] str)
+    {
+        if (str == null)
+            return null;
+        byte[] ret = new byte[str.length];
+        for (int i=0; i< str.length; ++i)
+        {
+            ret[i] = (byte)fromBinaryString(str[i]);
+        }
+        return ret;
+    }
+
     public static int highBitPos( int val )
     {
         if (val == 0 ) {

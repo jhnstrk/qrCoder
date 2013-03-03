@@ -171,6 +171,18 @@ class PolyHolder {
                          118,   2,  54,  32,  82, 215, 175, 198,  43, 238,
                          235,  27, 101, 184, 127,   3,   5,   8, 163, 238 };
 
+    public static byte[] getCoefficientsBytes( int numCodeWord )
+    {
+        short [] sCoeffs = getCoefficients(numCodeWord);
+        if (sCoeffs == null)
+            return null;
+        byte [] ret = new byte[sCoeffs.length];
+        for (int i=0; i<sCoeffs.length; ++i){
+            ret[i] = (byte)sCoeffs[i];
+        }
+        return ret;
+    }
+
     public static short[] getCoefficients( int numCodeWord )
     {
         switch (numCodeWord) {
