@@ -219,4 +219,43 @@ class PolyHolder {
         }
         return null;
     }
+
+    static boolean test()
+    {
+        boolean allPassed = true;
+        for ( int i = 0; i<67; ++i) {
+            allPassed &= testPoly(i);
+        }
+        return allPassed;
+    }
+
+    static boolean testPoly(int numEcCodeWords){
+        byte [] polyV = PolyHolder.getCoefficientsBytes(numEcCodeWords);
+        if ( polyV == null) 
+            return true;
+
+        QrFiniteField gf256 = new QrFiniteField();
+
+        GfPoly firstDeg = new GfPoly(2);
+        firstDeg.setCoeff(0, (byte)1);
+        firstDeg.setCoeff(1, (byte)1);
+
+        GfPoly prod = firstDeg.clonePoly();
+
+        // Generate a ecc polynomial.
+        for (int i=0; i<numEcCodeWords-1; ++i) {
+            firstDeg.setCoeff(0, gf256.mul(firstDeg.getCoeff(0), (byte)2) );
+            prod = prod.mul(firstDeg);
+        }
+
+        for (int i=0; i<polyV.length; ++i) {
+            polyV[i] = gf256.getAlphaPower(polyV[i]);
+        }
+
+        if ( !QrReedSolomon.compareByteArrays(polyV, prod.toArray()) ) {
+            System.err.println("Failed to generate polynomial by multiplication");
+            return false;
+        }
+        return true;
+    }
 }

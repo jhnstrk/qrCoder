@@ -1,15 +1,26 @@
+//import java.util.Vector;
+
 // Perform math in the finite field given by
 
 public class QrFiniteField {
+    private static QrFiniteField instance = null;
+
     // The primitive polynomial for this field
     static int generator = 0x011d; // x^8 + x^4 + x^3 + x^2 + 1. or 100011101
 
     byte[] powersOfAlpha;
 
-    public QrFiniteField()
+    protected QrFiniteField()
     {
         this.computePowersOfAlpha();
     }
+    
+    public static QrFiniteField getInstance() {
+        if ( instance == null)
+            instance = new QrFiniteField();
+        return instance;
+    }
+
     public byte add( byte x, byte y){
         return (byte)((int)x^(int)y);
     }
@@ -80,6 +91,12 @@ public class QrFiniteField {
     {
         // No range checking. But power should be 1 <= x <= 255
         return this.powersOfAlpha[((int)power & 0xFF)];
+    }
+
+    public byte getAlphaPower( int power )
+    {
+        // No range checking. But power should be 1 <= x <= 255
+        return this.powersOfAlpha[(power & 0xFF)];
     }
 
     public static boolean test()

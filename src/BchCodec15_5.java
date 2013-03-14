@@ -95,6 +95,9 @@ public class BchCodec15_5 {
     {
         // Need 16 bits for this.
         int maskedCode = codeVal & dataMask;
+        if (maskedCode != (int)codeVal) {
+            System.err.println("BchCodec15_5: Warning : input value out of range");
+        }
         int codedVal = maskedCode << 10; // * x^10
         codedVal = Poly2.mod(codedVal , genPoly );  // Modulo the generator polynomial.
         return (short)(codedVal | (maskedCode << 10));
@@ -125,34 +128,36 @@ public class BchCodec15_5 {
         int remainder = Poly2.mod( testValNum ,testVal );
         int expectRemainder = BinaryHelper.fromBinaryString("100101000100010");
         
-        if ( remainder !=- expectRemainder) {
+        if ( remainder != expectRemainder) {
             return false;
         }
 
         BchCodec15_5 coder = new BchCodec15_5();
 
-        short codeTest = coder.encode( (byte)testVal );
+        byte inputValue = 13;
+        short codeTest = coder.encode( inputValue );
         byte decodeTest = coder.decode(codeTest);
 
-        if ( decodeTest != testVal ) {
-            System.err.println(" Encode / Decode " + testVal +" failed. Got " + decodeTest);
+        if ( decodeTest != inputValue ) {
+            System.err.println(" Encode / Decode " + inputValue +" failed. Got " + decodeTest);
             return false;
         }
         decodeTest = coder.decode((short)(codeTest ^ ( 1 << 5)));
-        if ( decodeTest != testVal ) {
-            System.err.println(" Encode / Decode 1 bit err " + testVal +" failed. Got " + decodeTest);
+        if ( decodeTest != inputValue ) {
+            System.err.println(" Encode / Decode 1 bit err " + inputValue +" failed. Got " + decodeTest);
             return false;
         }
 
         decodeTest = coder.decode((short)(codeTest ^ ( 1 << 5) ^ (1 << 10) ^( 1 << 7)));
-        if ( decodeTest != testVal ) {
-            System.err.println(" Encode / Decode 3 bit errs " + testVal +" failed. Got " + decodeTest);
+        if ( decodeTest != inputValue ) {
+            System.err.println(" Encode / Decode 3 bit errs " + inputValue +" failed. Got " + decodeTest);
             return false;
         }
 
+        // 4 bit errors are not recoverable. Expect a mis-code or -1.
         decodeTest = coder.decode( (short)(codeTest ^ ( 1 + 2 + 4 + 16)) );
-        if ( decodeTest != -1 ) {
-            System.err.println(" Encode / Decode 4 bit errs " + testVal +" failed. Got " + decodeTest);
+        if ( decodeTest == inputValue ) {
+            System.err.println(" Encode / Decode 4 bit errs " + inputValue +" failed. Got " + decodeTest);
             return false;
         }
 
