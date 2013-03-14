@@ -44,15 +44,14 @@ public class QrReedSolomon {
         byte[]s = new byte[ N ];
         for (int i=0; i<N; ++i) {
             s[i] = iPoly.evaluate( gf256.getAlphaPower(i) );
-            allZeroSyndrome = false;
+            if (s[i] != 0) {
+                allZeroSyndrome = false;
+            }
         }
 
         if (allZeroSyndrome) {
-            byte[] ret = new byte[input.length - N];
-            for (int i=0; i<input.length - N; ++i) {
-                ret[i] = input[i];
-            }
-            return ret;
+            iPoly.shiftR(N);     // Drop terms of lowest order.
+            return iPoly.toArray(input.length - N);  // Keep only high order.
         }
 
         GfPoly C = new GfPoly(1,poly.length());
@@ -148,13 +147,38 @@ public class QrReedSolomon {
             allTestsPassed &= tmp.equals(valuesP);
         }
         byte [] enc = obj.encode( values, poly );
-        allTestsPassed &= compareByteArrays(enc, refEc);
+        if (!compareByteArrays(enc, refEc)) {
+            System.err.println("Encoding failed");
+            allTestsPassed = false;
+        }
+
+        byte [] fullEnc = catByteArrays( values, refEc);
+
+        byte [] decVal = obj.decode(fullEnc, poly);
+        if (!compareByteArrays(values, decVal)) {
+            System.err.println("Decoding clean (no bits flipped) failed");
+            allTestsPassed = false;
+        }
+
         for (int i=0; i<enc.length; ++i) {
             //System.out.println(BinaryHelper.asBinaryString(enc[i]));
         }
         return allTestsPassed;
     }
 
+
+    // a goes into lower array values.
+    public static byte[] catByteArrays( byte[] a, byte[] b) 
+    {
+        byte [] cat = new byte[ a.length + b.length];
+        for ( int i=0; i<a.length; ++i){
+            cat[i] = a[i];
+        }
+        for ( int i=0; i<b.length; ++i){
+            cat[i+a.length] = b[i];
+        }
+        return cat;
+    }
 
     public static boolean compareByteArrays( byte[] a, byte[] b) {
         if ( a==null && b==null)

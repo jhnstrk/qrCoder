@@ -25,7 +25,7 @@ public class GfPoly {
         m_coeffs = new byte[maxLen];
     }
 
-    // From reversed (high order first) coeefs.
+    // From reversed (high order first) coefficients.
     GfPoly(byte[] coeffsRev) {
         m_len = coeffsRev.length;
         m_coeffs = new byte[coeffsRev.length];
@@ -239,6 +239,10 @@ public class GfPoly {
             }
             this.resize(m_len + count);
         }
+    }
+
+    public void shiftR(int count) {
+        shiftL(-count);
     }
 
     public static boolean test() 
