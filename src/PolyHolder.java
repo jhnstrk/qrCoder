@@ -249,7 +249,7 @@ class PolyHolder {
         }
 
         for (int i=0; i<polyV.length; ++i) {
-            polyV[i] = gf256.getAlphaPower(polyV[i]);
+            polyV[i] = gf256.pow(polyV[i]);
         }
 
         if ( !QrReedSolomon.compareByteArrays(polyV, prod.toArray()) ) {

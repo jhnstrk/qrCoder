@@ -3,6 +3,18 @@
 // Perform math in the finite field given by
 
 public class QrFiniteField {
+
+    class FiniteFieldMathException extends Exception {
+
+        FiniteFieldMathException( String what ) 
+        {
+            super(what);
+        }
+        /**        */
+        private static final long serialVersionUID = 1L;
+        
+    }
+
     private static QrFiniteField instance = null;
 
     // The primitive polynomial for this field
@@ -87,16 +99,42 @@ public class QrFiniteField {
         }
     }
 
-    public byte getAlphaPower( byte power )
+    public byte pow( byte power )
     {
         // No range checking. But power should be 1 <= x <= 255
         return this.powersOfAlpha[((int)power & 0xFF)];
     }
 
-    public byte getAlphaPower( int power )
+    public byte pow( int power )
     {
         // No range checking. But power should be 1 <= x <= 255
         return this.powersOfAlpha[(power & 0xFF)];
+    }
+
+    public int log( byte v )
+    {
+        for (int i = 0; i<256; ++i) {
+            if (this.pow(i) == v) {
+                return i;
+            }
+        }
+        return 0;
+        //throw new FiniteFieldMathException("Log zero");
+    }
+
+    // Multiplication by repeated addition or subtraction.
+    public byte ordinaryMul( int n, byte v) {
+        byte sum = 0;
+        if ( n >= 0 ) {
+            for ( int i=0; i<n; ++i){
+                sum = this.add(sum, v);
+            }
+        } else {
+            for ( int i=0; i<n; ++i){
+                sum = this.sub(sum, v);
+            }
+        }
+        return sum;
     }
 
     public static boolean test()
@@ -109,12 +147,12 @@ public class QrFiniteField {
                     " expected " + BinaryHelper.fromBinaryString("100011101") );
             allTestsPassed = false;
         }
-        if ( obj.getAlphaPower((byte)0) != 1 ) {
-            System.err.println("Expected alpha^0 == 1. Got : " + obj.getAlphaPower((byte)0) );
+        if ( obj.pow((byte)0) != 1 ) {
+            System.err.println("Expected alpha^0 == 1. Got : " + obj.pow((byte)0) );
             allTestsPassed = false;
         }
-        if ( obj.getAlphaPower((byte)1) != 2 ) {
-            System.err.println("Expected alpha^1 == 2. Got : " + obj.getAlphaPower((byte)1) );
+        if ( obj.pow((byte)1) != 2 ) {
+            System.err.println("Expected alpha^1 == 2. Got : " + obj.pow((byte)1) );
             allTestsPassed = false;
         }
         byte aVal = 0x4F;

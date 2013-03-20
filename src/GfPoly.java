@@ -83,6 +83,11 @@ public class GfPoly {
         return ret;
     }
 
+    public GfPoly sub( GfPoly y)
+    {
+        return this.add(y);
+    }
+
     public GfPoly mul( GfPoly y)
     {
         if ( (m_len == 0 ) || (y.m_len == 0) ) {
@@ -157,6 +162,13 @@ public class GfPoly {
         return sum;
     }
 
+    void mul( byte x)
+    {
+        for (int i=0; i<this.m_len; ++i) {
+            m_coeffs[i] = m_gf256.mul(m_coeffs[i], x);
+        }
+    }
+
     byte[] toArray()
     {
         byte[] ret = new byte[m_len];
@@ -177,7 +189,7 @@ public class GfPoly {
         }
         return ret;
     }
-    
+
     void resize( int newLen) {
         if ( newLen > m_len) {
             if ( newLen > this.m_coeffs.length) {
@@ -245,6 +257,22 @@ public class GfPoly {
         shiftL(-count);
     }
 
+    GfPoly formalDerivative()
+    {
+        // Return the derivative of the poly.
+        if (this.m_len <= 1){
+            return new GfPoly();
+        }
+
+        final int N = this.m_len - 1;
+        final GfPoly ret = new GfPoly( N);
+        for (int i=0; i<N; ++i){
+            byte om = m_gf256.ordinaryMul(i+1,    this.getCoeff(i+1));
+            ret.setCoeff(i, om );
+        }
+        return ret;
+    }
+
     public static boolean test() 
     {
         byte[] inXB = { 16, 8, 4, 2 , 2 };
@@ -262,6 +290,27 @@ public class GfPoly {
             System.err.println("multiply / divide test failed");
         }
 
+        byte [] p1 = { 1,1 };
+        byte [] p2 = { 1,4 };
+        byte [] p3 = { 1,16 };
+        GfPoly pp1 = new GfPoly(p1);
+        GfPoly pp2 = new GfPoly(p2);
+        GfPoly pp3 = new GfPoly(p3);
+        
+        GfPoly prod123 = pp1.mul(pp2).mul(pp3);
+        
+        if (prod123.evaluate(p1[1]) != 0) {
+            allTestsPassed = false;
+        }
+        if (prod123.evaluate(p2[1]) != 0) {
+            allTestsPassed = false;
+        }
+        if (prod123.evaluate(p3[1]) != 0) {
+            allTestsPassed = false;
+        }
+        if (! (prod123.div(pp2.mul(pp3)).quotient.equals(pp1)) ) {
+            allTestsPassed = false;
+        }
         return allTestsPassed;
     }
 }

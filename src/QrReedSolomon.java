@@ -23,7 +23,7 @@ public class QrReedSolomon {
 
     public byte[] reverse( byte[] x)
     {
-        byte[] ret = new byte[x.length];
+        final byte[] ret = new byte[x.length];
         for (int i=0; i<x.length; ++i) {
             ret[i] = x[x.length -1 -i];
         }
@@ -40,18 +40,20 @@ public class QrReedSolomon {
         // Convert input to polynomial form
         GfPoly iPoly = new GfPoly(input);
         boolean allZeroSyndrome = true;
-        int N = poly.length() - 1;
-        byte[]s = new byte[ N ];
+        final int N = poly.length() - 1;
+        // s is the syndrome vector. s[0] is 0-order.
+        GfPoly s = new GfPoly( N );
+        // The zero-order term is zero.
         for (int i=0; i<N; ++i) {
-            s[i] = iPoly.evaluate( gf256.getAlphaPower(i) );
-            if (s[i] != 0) {
+            s.setCoeff(i, iPoly.evaluate( gf256.pow(i) ) );
+            if (s.getCoeff(i) != 0) {
                 allZeroSyndrome = false;
             }
         }
 
         if (allZeroSyndrome) {
             iPoly.shiftR(N);     // Drop terms of lowest order.
-            return iPoly.toArray(input.length - N);  // Keep only high order.
+            return iPoly.toArray(input.length - N);
         }
 
         GfPoly C = new GfPoly(1,poly.length());
@@ -64,52 +66,77 @@ public class QrReedSolomon {
         int m = 1;
 
         for (int n=0; n<N; ++n) {
-            byte d = s[n];
-            for (int j=0; j<n; ++j) {
-                byte tmp = gf256.mul(C.getCoeff(j), s[n-j]);
+            byte d = s.getCoeff(n);
+            for (int i=1; i<=L; ++i) {
+                byte tmp = gf256.mul(C.getCoeff(i), s.getCoeff(n-i));
                 d = gf256.add(d, tmp);
             }
             if (d == 0) {
                 ++m;
                 continue;
-            } else {
+            } else if (2*L <= N ){
+                GfPoly Tmp = C.clonePoly();
+
                 byte d_over_b = gf256.div(d, b);
-                int endC = B.length() + m;
-                C.resize(endC);
+                B.shiftL(m);  // Times x^m
+                B.mul( d_over_b);
+                C = C.sub( B );
 
-                boolean reset = (2*L <= N); 
-                if  (reset) {
-                    B = C.clonePoly();
-                }
+                B = Tmp;
 
-                for (int i=endC-1; i>=m ; --i) {
-                    byte tmp = gf256.mul(B.getCoeff(i-m), d_over_b);
-                    tmp = gf256.sub(C.getCoeff(i), tmp);
-                    C.setCoeff(i, tmp);
-                }
-
-                if  (reset) {
-                    L = n + 1 - L;
-                    b = d;
-                    m = 1;
-                } else {
-                    ++m;
-                }
+                L = n + 1 - L;
+                b = d;
+                m = 1;
+            } else {
+                GfPoly tmp = B.clonePoly();
+                byte d_over_b = gf256.div(d, b);
+                tmp.shiftL(m);  // Times x^m
+                tmp.mul( d_over_b);
+                C = C.sub( tmp );
+                ++m;
             }
         }
         
         // C now contains the error location polynomial.
-        // TODO : Evaluate c at each value of alpha to find the zeros.
+        // Evaluate c at each value of alpha to find the zeros.
         ArrayList<Byte> zeros = new ArrayList<Byte>();
         for (int i=0; i<256; ++i) {
             byte v = C.evaluate((byte)i);
             if ( v == 0) {
-                zeros.add( v );
+                zeros.add( (Byte)(byte)i );
             }
         }
 
+        GfPoly omega = C.mul(s);
+        // mod x^(2t)
+        // omega.resize(N);  // TODO : check, maybe 2N, or N+1??
+
+        GfPoly xPowN = new GfPoly(N+1);
+        xPowN.setCoeff(N, (byte)1);
+        omega = omega.div(xPowN).remainder;
+
+        GfPoly lambdaDash = C.formalDerivative();
+
+        GfPoly ePoly = new GfPoly(input.length);
         // Apply the Forney alg to find the error values.
-        return new byte[0];
+        for ( byte x : zeros ) {
+            byte x_recip = gf256.multiplicativeInverse(x);
+            int pwr = gf256.log(x_recip);
+
+            final byte omega_x = omega.evaluate(x_recip);
+            final byte lambaDash_x = lambdaDash.evaluate(x_recip);
+            byte tmp = gf256.mul(x_recip, omega_x);
+            // Omit the minus here as add == sub.
+            final byte val = gf256.div(tmp, lambaDash_x);
+
+            if ( pwr < ePoly.length() ) {
+                ePoly.setCoeff(pwr, val);
+            }
+        }
+
+        GfPoly retPoly = iPoly.sub(ePoly);
+        retPoly.shiftR(N);
+        return retPoly.toArray(input.length - N);
     }
 
     public static boolean test() 
@@ -135,7 +162,7 @@ public class QrReedSolomon {
         QrFiniteField gf256 = QrFiniteField.getInstance();
 
         for (int i=0; i<polyV.length; ++i) {
-            polyV[i] = gf256.getAlphaPower(polyV[i]);
+            polyV[i] = gf256.pow(polyV[i]);
         }
 
         GfPoly poly = new GfPoly(polyV);
@@ -160,8 +187,30 @@ public class QrReedSolomon {
             allTestsPassed = false;
         }
 
-        for (int i=0; i<enc.length; ++i) {
-            //System.out.println(BinaryHelper.asBinaryString(enc[i]));
+        // Test corrupted bit stream.
+        byte [] fullEncWithErrs = fullEnc.clone();
+        // Flip some bits.
+        int flipNum = 10;
+        fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0x03);
+        decVal = obj.decode(fullEncWithErrs, poly);
+        if (!compareByteArrays(values, decVal)) {
+            System.err.println("Decoding corrupted stream (1) failed");
+            allTestsPassed = false;
+        }
+
+
+        fullEncWithErrs = fullEnc.clone();
+        // Flip some bits.
+        flipNum = 5;
+        fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0xba);
+        decVal = obj.decode(fullEncWithErrs, poly);
+        if (!compareByteArrays(values, decVal)) {
+            System.err.println("Decoding corrupted stream (1) failed");
+            allTestsPassed = false;
+        }
+
+        if (allTestsPassed) {
+            System.out.println("QrReedSolomon test passed");
         }
         return allTestsPassed;
     }
