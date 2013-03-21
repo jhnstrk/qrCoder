@@ -123,8 +123,8 @@ public class QrReedSolomon {
             byte x_recip = gf256.multiplicativeInverse(x);
             int pwr = gf256.log(x_recip);
 
-            final byte omega_x = omega.evaluate(x_recip);
-            final byte lambaDash_x = lambdaDash.evaluate(x_recip);
+            final byte omega_x = omega.evaluate(x);
+            final byte lambaDash_x = lambdaDash.evaluate(x);
             byte tmp = gf256.mul(x_recip, omega_x);
             // Omit the minus here as add == sub.
             final byte val = gf256.div(tmp, lambaDash_x);
@@ -192,21 +192,29 @@ public class QrReedSolomon {
         // Flip some bits.
         int flipNum = 10;
         fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0x03);
+
+        flipNum = 15;
+        fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0x0c);
+
+        flipNum = 23;
+        fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0x0c);
+
         decVal = obj.decode(fullEncWithErrs, poly);
         if (!compareByteArrays(values, decVal)) {
             System.err.println("Decoding corrupted stream (1) failed");
             allTestsPassed = false;
         }
 
-
-        fullEncWithErrs = fullEnc.clone();
         // Flip some bits.
-        flipNum = 5;
-        fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0xba);
-        decVal = obj.decode(fullEncWithErrs, poly);
-        if (!compareByteArrays(values, decVal)) {
-            System.err.println("Decoding corrupted stream (1) failed");
-            allTestsPassed = false;
+        for ( flipNum = 0; flipNum < fullEnc.length; ++flipNum)
+        {
+            fullEncWithErrs = fullEnc.clone();
+            fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0xba);
+            decVal = obj.decode(fullEncWithErrs, poly);
+            if (!compareByteArrays(values, decVal)) {
+                System.err.println("Decoding corrupted stream (1) failed");
+                allTestsPassed = false;
+            }
         }
 
         if (allTestsPassed) {
