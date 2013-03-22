@@ -30,7 +30,8 @@ public class Poly2 {
             remainder = r;
         }
     }
-    
+
+    // Return x/y (quotient and remainder)
     public static DivResult divQr( int x, int y){
 
         int highBitY = -1;

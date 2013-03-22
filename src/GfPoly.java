@@ -1,6 +1,6 @@
 
 public class GfPoly {
-    static QrFiniteField m_gf256 = QrFiniteField.getInstance();
+    static FiniteField m_gf256 = QrFiniteField.getInstance256();
 
     // Stored in reverse order. i.e. 1 is first.
     byte[] m_coeffs;

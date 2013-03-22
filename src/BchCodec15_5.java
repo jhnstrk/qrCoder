@@ -2,9 +2,10 @@
 
 // Need to decode BCH codes using the 15,5 coding
 public class BchCodec15_5 {
-    final int dataLen = 5;
-    final byte dataMask = ((1 << dataLen) - 1 );
     final int codeWordLen = 15;
+    final int dataLen = 5;
+    final int errorCorrLen = codeWordLen - dataLen;
+    final byte dataMask = ((1 << dataLen) - 1 );
     final int codeWordEnd = (1 << codeWordLen);
     final short genPoly = ( 1 << 10 ) | ( 1 << 8 ) | ( 1 << 5 ) | ( 1 << 4 ) | ( 1 << 2 ) | ( 1 << 1 ) | 1;
     private byte lut[];
@@ -98,9 +99,9 @@ public class BchCodec15_5 {
         if (maskedCode != (int)codeVal) {
             System.err.println("BchCodec15_5: Warning : input value out of range");
         }
-        int codedVal = maskedCode << 10; // * x^10
+        int codedVal = maskedCode << errorCorrLen; // * x^10
         codedVal = Poly2.mod(codedVal , genPoly );  // Modulo the generator polynomial.
-        return (short)(codedVal | (maskedCode << 10));
+        return (short)(codedVal | (maskedCode << errorCorrLen));
     }
 
     public static boolean test()

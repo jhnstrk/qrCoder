@@ -35,7 +35,7 @@ public class QrReedSolomon {
     {
         // Implementation of the Berlekamp-Massey alg.
         // Calculate the syndromes, checking if they are all zero.
-        QrFiniteField gf256 = QrFiniteField.getInstance();
+        FiniteField gf256 = QrFiniteField.getInstance256();
         
         // Convert input to polynomial form
         GfPoly iPoly = new GfPoly(input);
@@ -96,7 +96,7 @@ public class QrReedSolomon {
                 ++m;
             }
         }
-        
+
         // C now contains the error location polynomial.
         // Evaluate c at each value of alpha to find the zeros.
         ArrayList<Byte> zeros = new ArrayList<Byte>();
@@ -105,6 +105,12 @@ public class QrReedSolomon {
             if ( v == 0) {
                 zeros.add( (Byte)(byte)i );
             }
+        }
+
+        if (zeros.size() != L) {
+            // Decoding error : number of error positions is not equal to number of errors.
+            // Probably an un-correctable code.
+            return null;
         }
 
         GfPoly omega = C.mul(s);
@@ -159,7 +165,7 @@ public class QrReedSolomon {
         byte [] values = BinaryHelper.byteFromBinaryStringArray(inStreamStr);
         byte [] refEc = BinaryHelper.byteFromBinaryStringArray(refCorr);
 
-        QrFiniteField gf256 = QrFiniteField.getInstance();
+        FiniteField gf256 = QrFiniteField.getInstance256();
 
         for (int i=0; i<polyV.length; ++i) {
             polyV[i] = gf256.pow(polyV[i]);
@@ -197,6 +203,9 @@ public class QrReedSolomon {
         fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0x0c);
 
         flipNum = 23;
+        fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0x0c);
+
+        flipNum = 3;
         fullEncWithErrs[flipNum] = (byte)(fullEncWithErrs[flipNum] ^ 0x0c);
 
         decVal = obj.decode(fullEncWithErrs, poly);

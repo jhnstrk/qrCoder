@@ -234,7 +234,7 @@ class PolyHolder {
         if ( polyV == null) 
             return true;
 
-        QrFiniteField gf256 = new QrFiniteField();
+        FiniteField gf256 = QrFiniteField.getInstance256();
 
         GfPoly firstDeg = new GfPoly(2);
         firstDeg.setCoeff(0, (byte)1);
