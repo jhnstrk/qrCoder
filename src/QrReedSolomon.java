@@ -13,7 +13,7 @@ public class QrReedSolomon {
     //! Generate 
     public byte [] encode( byte[] input , GfPoly poly)
     {
-        GfPoly iPoly= new GfPoly(input);
+        GfPoly iPoly= new GfPoly(input, QrFiniteField.getInstance256());
         iPoly.shiftL(poly.length() - 1);
 
         GfPoly res = iPoly.div(poly).remainder;
@@ -38,11 +38,11 @@ public class QrReedSolomon {
         FiniteField gf256 = QrFiniteField.getInstance256();
         
         // Convert input to polynomial form
-        GfPoly iPoly = new GfPoly(input);
+        GfPoly iPoly = new GfPoly(input, gf256);
         boolean allZeroSyndrome = true;
         final int N = poly.length() - 1;
         // s is the syndrome vector. s[0] is 0-order.
-        GfPoly s = new GfPoly( N );
+        GfPoly s = new GfPoly( N, gf256 );
         // The zero-order term is zero.
         for (int i=0; i<N; ++i) {
             s.setCoeff(i, iPoly.evaluate( gf256.pow(i) ) );
@@ -56,9 +56,9 @@ public class QrReedSolomon {
             return iPoly.toArray(input.length - N);
         }
 
-        GfPoly C = new GfPoly(1,poly.length());
+        GfPoly C = new GfPoly(1, gf256);
         C.setCoeff(0, (byte)(1));
-        GfPoly B = new GfPoly(1,poly.length());
+        GfPoly B = new GfPoly(1, gf256);
         B.setCoeff(0, (byte)(1));
 
         int L = 0;
@@ -117,13 +117,13 @@ public class QrReedSolomon {
         // mod x^(2t)
         // omega.resize(N);  // TODO : check, maybe 2N, or N+1??
 
-        GfPoly xPowN = new GfPoly(N+1);
+        GfPoly xPowN = new GfPoly(N+1, gf256);
         xPowN.setCoeff(N, (byte)1);
         omega = omega.div(xPowN).remainder;
 
         GfPoly lambdaDash = C.formalDerivative();
 
-        GfPoly ePoly = new GfPoly(input.length);
+        GfPoly ePoly = new GfPoly(input.length, gf256);
         // Apply the Forney alg to find the error values.
         for ( byte x : zeros ) {
             byte x_recip = gf256.multiplicativeInverse(x);
@@ -171,9 +171,9 @@ public class QrReedSolomon {
             polyV[i] = gf256.pow(polyV[i]);
         }
 
-        GfPoly poly = new GfPoly(polyV);
+        GfPoly poly = new GfPoly(polyV, gf256);
         {
-            GfPoly valuesP = new GfPoly(values);
+            GfPoly valuesP = new GfPoly(values, gf256);
             GfPoly.DivResult dv = valuesP.div(poly);
             GfPoly tmp = dv.quotient.mul(poly);
             tmp = tmp.add( dv.remainder);

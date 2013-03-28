@@ -7,10 +7,14 @@ public class Main {
      */
     public static void main(String[] args) {
 
+        if (!FiniteFieldInt.test()) {
+            System.err.println("FiniteField test failed");
+        }
+
         if (!FiniteField.test()) {
             System.err.println("FiniteField test failed");
         }
-        if (!BchCodec18_6.test()) {
+        if (!Golay24_12.test()) {
             System.err.println("BchCodec15_5 test failed");
         }
 

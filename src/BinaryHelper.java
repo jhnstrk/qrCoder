@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 
 public class BinaryHelper {
     public static int nonZeroBitCount( int num )
@@ -21,33 +23,20 @@ public class BinaryHelper {
 
     public static String asBinaryString( int num, int len )
     {
-        String str = new String();
-        len = Math.min(len,32);
-        for ( int i=0; i < len; ++i ) {
-            if ( ( (num >> (len - 1 - i)) & 1 ) == 0 ) {
-                str += "0";
-            } else {
-                str += "1";
-            }
+        String str = Integer.toString(num, 2);
+        if (str.length() < len) {
+            char [] buff = new char[len - str.length()];
+            Arrays.fill(buff, '0');
+            str = (new String(buff)) + str;
+        } else if ( str.length() > len) {
+            str = str.substring(str.length() - len, str.length());
         }
-        str += "(" + num +")";
         return str;
     }
 
     public static int fromBinaryString(String str)
     {
-        int num = 0;
-        for ( int i=0; i<str.length(); ++i)
-        {
-            if ( str.charAt(i) == '1' ) {
-                num = (num << 1) | 1;
-            } else if ( str.charAt(i) == '0'){
-                num = (num << 1);
-            } else if ( str.charAt(i) != ' '){
-                return num;  // Stop at first non 0 / 1 /
-            }
-        }
-        return num;
+        return Integer.parseInt(str,2);
     }
 
     public static byte[] byteFromBinaryStringArray(String[] str)

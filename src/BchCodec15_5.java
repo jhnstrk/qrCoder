@@ -8,6 +8,7 @@ public class BchCodec15_5 {
     final byte dataMask = ((1 << dataLen) - 1 );
     final int codeWordEnd = (1 << codeWordLen);
     final short genPoly = ( 1 << 10 ) | ( 1 << 8 ) | ( 1 << 5 ) | ( 1 << 4 ) | ( 1 << 2 ) | ( 1 << 1 ) | 1;
+    // Generator has factors 000111(7) ,10011(19) , 11111(31)
     private byte lut[];
 
     public BchCodec15_5()

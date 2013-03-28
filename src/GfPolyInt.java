@@ -1,32 +1,32 @@
 
-public class GfPoly {
-    final FiniteField m_gf2n;
+public class GfPolyInt {
+    final FiniteFieldInt m_gf2n;
 
     // Stored in reverse order. i.e. 1 is first.
-    byte[] m_coeffs;
+    int[] m_coeffs;
     int    m_len;
 
     class DivResult {
-        GfPoly quotient;
-        GfPoly remainder;
+        GfPolyInt quotient;
+        GfPolyInt remainder;
     }
 
-    GfPoly(FiniteField gf) {
+    GfPolyInt(FiniteFieldInt gf) {
         m_gf2n = gf;
         m_len = 0;
     }
 
-    GfPoly(int len, FiniteField gf) {
+    GfPolyInt(int len, FiniteFieldInt gf) {
         m_len = len;
         m_gf2n = gf;
-        m_coeffs = new byte[len];
+        m_coeffs = new int[len];
     }
 
     // From reversed (high order first) coefficients.
-    GfPoly(byte[] coeffsRev, FiniteField gf) {
+    GfPolyInt(int[] coeffsRev, FiniteFieldInt gf) {
         m_len = coeffsRev.length;
         m_gf2n = gf;
-        m_coeffs = new byte[coeffsRev.length];
+        m_coeffs = new int[coeffsRev.length];
         for(int i=0;i<m_len;++i) {
             m_coeffs[i] = coeffsRev[m_len - 1 - i];
         }
@@ -36,11 +36,11 @@ public class GfPoly {
         return m_len;
     }
 
-    void setCoeff(int i, byte val) {
+    void setCoeff(int i, int val) {
         m_coeffs[i] = val;
     }
 
-    byte getCoeff(int i) {
+    int getCoeff(int i) {
         return m_coeffs[i];
     }
 
@@ -50,19 +50,19 @@ public class GfPoly {
         }
     }
 
-    public GfPoly clonePoly()
+    public GfPolyInt clonePoly()
     {
-        GfPoly ret = new GfPoly(m_gf2n);
+        GfPolyInt ret = new GfPolyInt(m_gf2n);
         ret.m_len = this.m_len;
         ret.m_coeffs = this.m_coeffs.clone();
         return ret;
     }
 
-    public GfPoly add( GfPoly y)
+    public GfPolyInt add( GfPolyInt y)
     {
-        GfPoly ret;
+        GfPolyInt ret;
         if ( this.m_len >= y.m_len ) {
-            ret = new GfPoly(m_len, m_gf2n);
+            ret = new GfPolyInt(m_len, m_gf2n);
             for (int i=0; i<y.m_len; ++i){
                 ret.m_coeffs[i] = m_gf2n.add(this.m_coeffs[i], y.m_coeffs[i] );
             }
@@ -70,7 +70,7 @@ public class GfPoly {
                 ret.m_coeffs[i] = this.m_coeffs[i];
             }
         } else {
-            ret = new GfPoly(y.m_len, m_gf2n);
+            ret = new GfPolyInt(y.m_len, m_gf2n);
             for (int i=0; i<this.m_len; ++i){
                 ret.m_coeffs[i] = m_gf2n.add(this.m_coeffs[i], y.m_coeffs[i]);
             }
@@ -81,24 +81,24 @@ public class GfPoly {
         return ret;
     }
 
-    public GfPoly sub( GfPoly y)
+    public GfPolyInt sub( GfPolyInt y)
     {
         return this.add(y);
     }
 
-    public GfPoly mul( GfPoly y)
+    public GfPolyInt mul( GfPolyInt y)
     {
         if ( (m_len == 0 ) || (y.m_len == 0) ) {
-            return new GfPoly(m_gf2n);
+            return new GfPolyInt(m_gf2n);
         }
 
-        GfPoly output = new GfPoly( m_len + y.m_len - 1, m_gf2n);
+        GfPolyInt output = new GfPolyInt( m_len + y.m_len - 1, m_gf2n);
         for (int i=0; i<m_len + y.m_len -1; ++i) {
-            output.m_coeffs[i] = (byte)0;
+            output.m_coeffs[i] = (int)0;
         }
         for (int i=0; i<m_len; ++i) {
             for (int j=0; j<y.m_len; ++j) {
-                byte prod = m_gf2n.mul(m_coeffs[i], y.m_coeffs[j]);
+                int prod = m_gf2n.mul(m_coeffs[i], y.m_coeffs[j]);
                 int pwr = i + j;
                 output.m_coeffs[pwr]= m_gf2n.add(output.getCoeff(pwr), prod);
             }
@@ -108,20 +108,20 @@ public class GfPoly {
     }
 
     //! Get remainder. Highest order is first.
-    public DivResult div( GfPoly poly)
+    public DivResult div( GfPolyInt poly)
     {
         int lenPoly = poly.length();
 
         if (m_len < lenPoly) {
             DivResult ret = new DivResult();
-            ret.quotient = new GfPoly(m_gf2n);
+            ret.quotient = new GfPolyInt(m_gf2n);
             ret.remainder = this;
             return ret;
         }
 
-        GfPoly quotient  = new GfPoly(m_len - lenPoly + 1, m_gf2n);
+        GfPolyInt quotient  = new GfPolyInt(m_len - lenPoly + 1, m_gf2n);
 
-        byte[] work = new byte[lenPoly];
+        int[] work = new int[lenPoly];
         for( int i=0; i<lenPoly; ++i){
             work[i] = m_coeffs[i + m_len - lenPoly];
         }
@@ -129,56 +129,58 @@ public class GfPoly {
         for (int i=m_len - lenPoly; i>=0; --i) {
             work[0] = m_coeffs[i];
             // y1 x2 yy x yy ) x1 x5 xx x4 xx x3 xx x2 xx x xx 1
-            byte v = m_gf2n.div(work[lenPoly-1], poly.getCoeff(lenPoly-1) );
+            int v = m_gf2n.div(work[lenPoly-1], poly.getCoeff(lenPoly-1) );
             quotient.setCoeff(i, v);
             for (int j=lenPoly-1;j>0;--j){
-                byte tmpWork = m_gf2n.mul(poly.getCoeff(j-1), v);
+                int tmpWork = m_gf2n.mul(poly.getCoeff(j-1), v);
                 tmpWork = m_gf2n.sub(work[j-1], tmpWork);
                 work[j] = tmpWork;
             }
         }
 
-        GfPoly remainder = new GfPoly(lenPoly - 1, m_gf2n);
+        GfPolyInt remainder = new GfPolyInt(lenPoly - 1, m_gf2n);
         for ( int i =0; i<lenPoly-1; ++i) {
             remainder.setCoeff(i, work[i+1]);
         }
+        remainder.stripZeros();
+        quotient.stripZeros();
         DivResult ret = new DivResult();
         ret.remainder = remainder;
         ret.quotient = quotient;
         return ret;
     }
 
-    byte evaluate( byte value)
+    int evaluate( int value)
     {
-        byte sum = 0;
-        byte vTmp = 1;
+        int sum = 0;
+        int vTmp = 1;
         for (int i=0; i<this.m_len; ++i) {
-            byte tmp = m_gf2n.mul(this.m_coeffs[i], vTmp);
+            int tmp = m_gf2n.mul(this.m_coeffs[i], vTmp);
             sum = m_gf2n.add(sum, tmp);
             vTmp = m_gf2n.mul(vTmp, value);
         }
         return sum;
     }
 
-    void mul( byte x)
+    void mul( int x)
     {
         for (int i=0; i<this.m_len; ++i) {
             m_coeffs[i] = m_gf2n.mul(m_coeffs[i], x);
         }
     }
 
-    byte[] toArray()
+    int[] toArray()
     {
-        byte[] ret = new byte[m_len];
+        int[] ret = new int[m_len];
         for (int i=0; i<m_len; ++i) {
             ret[m_len-1-i] = m_coeffs[i];
         }
         return ret;
     }
 
-    byte[] toArray(int lenOut)
+    int[] toArray(int lenOut)
     {
-        byte[] ret = new byte[lenOut];
+        int[] ret = new int[lenOut];
         for (int i=0; i<m_len; ++i) {
             ret[lenOut-1-i] = m_coeffs[i];
         }
@@ -191,7 +193,7 @@ public class GfPoly {
     void resize( int newLen) {
         if ( newLen > m_len) {
             if ( newLen > this.m_coeffs.length) {
-                byte [] newCoeffs = new byte[newLen];
+                int [] newCoeffs = new int[newLen];
                 for ( int i=0; i<m_len; ++i) {
                     newCoeffs[i] = m_coeffs[i];
                 }
@@ -213,7 +215,7 @@ public class GfPoly {
     }
     
     // Compare equality, allowing for additional zeros.
-    public boolean equals( GfPoly other )
+    public boolean equals( GfPolyInt other )
     {
         if ( this.m_len <= other.m_len ) {
             for ( int i=0; i<m_len; ++i) {
@@ -255,49 +257,61 @@ public class GfPoly {
         shiftL(-count);
     }
 
-    GfPoly formalDerivative()
+    GfPolyInt formalDerivative()
     {
         // Return the derivative of the poly.
         if (this.m_len <= 1){
-            return new GfPoly(m_gf2n);
+            return new GfPolyInt(m_gf2n);
         }
 
         final int N = this.m_len - 1;
-        final GfPoly ret = new GfPoly( N , m_gf2n);
+        final GfPolyInt ret = new GfPolyInt( N , m_gf2n);
         for (int i=0; i<N; ++i){
-            byte om = m_gf2n.ordinaryMul(i+1,    this.getCoeff(i+1));
+            int om = m_gf2n.ordinaryMul(i+1,    this.getCoeff(i+1));
             ret.setCoeff(i, om );
+        }
+        return ret;
+    }
+
+    public String toString()
+    {
+        String ret = new String();
+        for (int i=m_len-1; i>=0; --i) {
+            ret += this.m_coeffs[i];
+            if ( i > 0)
+                ret += " ";
         }
         return ret;
     }
 
     public static boolean test() 
     {
-        FiniteField gf = QrFiniteField.getInstance256();
+        FiniteField gfbyte = QrFiniteField.getInstance256();
+        FiniteFieldInt gf = new  FiniteFieldInt(gfbyte.generator);
 
-        byte[] inXB = { 16, 8, 4, 2 , 2 };
-        byte[] inYB = { 1, 2 , 2 };
-//        byte[] inXB = { 16, 8 };
-//        byte[] inYB = { 16 };
-        GfPoly inX = new GfPoly(inXB, gf);
-        GfPoly inY = new GfPoly(inYB, gf);
+        int[] inXB = { 16, 8, 4, 2 , 2 };
+        int[] inYB = { 1, 2 , 2 };
+//        int[] inXB = { 16, 8 };
+//        int[] inYB = { 16 };
+        GfPolyInt inX = new GfPolyInt(inXB, gf);
+        GfPolyInt inY = new GfPolyInt(inYB, gf);
         DivResult res1 = inX.div( inY );
-        GfPoly mulv1 = inY.mul( res1.quotient );
+        GfPolyInt mulv1 = inY.mul( res1.quotient );
         boolean allTestsPassed = true;
-        GfPoly recovered = mulv1.add( res1.remainder );
+        GfPolyInt recovered = mulv1.add( res1.remainder );
         if (!recovered.equals(inX)){
             allTestsPassed = false;
             System.err.println("multiply / divide test failed");
         }
 
-        byte [] p1 = { 1,1 };
-        byte [] p2 = { 1,4 };
-        byte [] p3 = { 1,16 };
-        GfPoly pp1 = new GfPoly(p1, gf);
-        GfPoly pp2 = new GfPoly(p2, gf);
-        GfPoly pp3 = new GfPoly(p3, gf);
+        int [] p1 = { 1,1 };
+        int [] p2 = { 1,4 };
+        int [] p3 = { 1,16 };
+        GfPolyInt pp1 = new GfPolyInt(p1, gf);
+        GfPolyInt pp2 = new GfPolyInt(p2, gf);
+        GfPolyInt pp3 = new GfPolyInt(p3, gf);
         
-        GfPoly prod123 = pp1.mul(pp2).mul(pp3);
+        GfPolyInt prod123 = pp1.mul(pp2).mul(pp3);
         
         if (prod123.evaluate(p1[1]) != 0) {
             allTestsPassed = false;
@@ -313,4 +327,5 @@ public class GfPoly {
         }
         return allTestsPassed;
     }
+
 }

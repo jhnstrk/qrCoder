@@ -1,9 +1,6 @@
-//import java.util.Vector;
 
-//Perform math in the finite field given by
-
-public class FiniteField {
-
+// Finite field, for up to 2^31.
+public class FiniteFieldInt {
     class FiniteFieldMathException extends Exception {
 
         FiniteFieldMathException( String what ) 
@@ -22,11 +19,11 @@ public class FiniteField {
     final int nextHighBit; // highBit >> 1
     final int numBits; // number of bits in the field
 
-    byte[] powersOfAlpha;
-    byte[] inverseTable;
-    byte[] logTable;
+    int[] powersOfAlpha;
+    int[] inverseTable;
+    int[] logTable;
 
-    public FiniteField(int gen)
+    public FiniteFieldInt(int gen)
     {
         final int highBitPos = BinaryHelper.highBitPos(gen);
         this.generator = gen;
@@ -39,15 +36,15 @@ public class FiniteField {
         this.computeInverseTable();
     }
 
-    public byte add( byte x, byte y){
-        return (byte)((int)x^(int)y);
+    public int add( int x, int y){
+        return x^y;
     }
 
-    public byte sub( byte x, byte y){
-        return (byte)((int)x^(int)y);
+    public int sub( int x, int y){
+        return x^y;
     }
 
-    public byte mul( byte x, byte y){
+    public int mul( int x, int y){
         int ret = 0;
         int yShift = y & this.bitMask;
         for ( int i=0; i<this.numBits; ++i) {
@@ -60,55 +57,55 @@ public class FiniteField {
                 yShift = yShift ^ this.generator;
             }
         }
-        return (byte)ret;
+        return ret;
     }
 
     // Return x/y
     // Division in the finite field is multiplication by the multiplicative inverse.
     // The multiplicative inverse is the number (y) which gives x * y = 1
-    public byte div( byte x, byte y)
+    public int div( int x, int y)
     {
-        byte inv = this.multiplicativeInverse(y);
+        int inv = this.multiplicativeInverse(y);
         return this.mul(x, inv);
     }
 
-    byte multiplicativeInverse( byte x ) {
-        return this.inverseTable[(int)x & this.bitMask ];
+    int multiplicativeInverse( int x ) {
+        return this.inverseTable[x & this.bitMask ];
     }
 
     void computeInverseTable()
     {
-        this.inverseTable = new byte[ this.highBit ];
+        this.inverseTable = new int[ this.highBit ];
         for (int i=0; i<this.highBit; ++i) {
-            this.inverseTable[i] = this.computeMultiplicativeInverse((byte)i);
+            this.inverseTable[i] = this.computeMultiplicativeInverse((int)i);
         }
     }
 
-    byte computeMultiplicativeInverse( byte x )
+    int computeMultiplicativeInverse( int x )
     {
         // The extended Euclidean algorithm for finite fields
         int ri1 = this.generator;
-        int ri  = (int)x & 0xFF;  // Unsigned.
-        byte ai1 = 0;
-        byte ai = 1;
+        int ri  = x;  // Unsigned.
+        int ai1 = 0;
+        int ai = 1;
         while (ri > 1) {
-            byte ai2 = ai1;
+            int ai2 = ai1;
             ai1 = ai;
             int ri2 = ri1;
             ri1 = ri;
             Poly2.DivResult res = Poly2.divQr(ri2, ri1);
             ri = res.remainder;
-            ai = this.sub( ai2, this.mul((byte)res.quotient, ai1));
+            ai = this.sub( ai2, this.mul((int)res.quotient, ai1));
         }
-        return (byte)ai;
+        return (int)ai;
     }
 
     void computePowersOfAlpha()
     {
-        this.powersOfAlpha = new byte[this.highBit - 1];
-        this.logTable = new byte[this.highBit];
+        this.powersOfAlpha = new int[this.highBit - 1];
+        this.logTable = new int[this.highBit];
         this.logTable[0] = 0;
-        this.powersOfAlpha[0] = (byte)1;
+        this.powersOfAlpha[0] = (int)1;
         this.logTable[1] = 0;
         int x = 1;
         for (int i=1; i<this.highBit - 1; ++i) {
@@ -116,19 +113,28 @@ public class FiniteField {
             if ( (x & this.highBit) != 0 ) {
                 x ^= this.generator;
             }
-            this.powersOfAlpha[i] = (byte)x;
-            this.logTable[x] = (byte)i;
+            this.powersOfAlpha[i] = (int)x;
+            this.logTable[x] = (int)i;
         }
     }
 
-    public byte pow( byte power )
+    public int computePow( int power )
     {
-        // No range checking. But power should be 0 <= x <= 255
-        return this.powersOfAlpha[((int)power & 0xFF)];
+        int ret = 1;
+        int alpha2n = 2;
+        int shiftedPower = power;
+        while ( shiftedPower != 0) {
+            if ( (shiftedPower & 1) != 0) {
+                ret = this.mul(ret, alpha2n);
+            }
+            shiftedPower >>= 1;
+            alpha2n = this.mul(alpha2n, alpha2n);
+        }
+        return ret;
     }
 
     //As pow, but allow out-of-range
-    public byte pow( int power )
+    public int pow( int power )
     {
         if (power >= this.bitMask ) {
             power = power % this.bitMask;
@@ -143,16 +149,16 @@ public class FiniteField {
  
     //! Raise v to given power
     //  pow(0,0) gives 1
-    public byte pow(byte v, int power )
+    public int pow(int v, int power )
     {
         int logv = this.log(v);
         logv *= power;
         return this.pow(logv);
     }
 
-    public int log( byte v )
+    public int log( int v )
     {
-        return ((int)this.logTable[ (int)v & 0xFF ]) & 0xFF;
+        return this.logTable[ v ];
         //     for (int i = 0; i<256; ++i) {
         //         if (this.pow(i) == v) {
         //             return i;
@@ -163,7 +169,7 @@ public class FiniteField {
     }
 
     // Multiplication by repeated addition or subtraction.
-    public byte ordinaryMul( int n, byte v) {
+    public int ordinaryMul( int n, int v) {
 
         // Since addition is the same as subtraction, and both are XOR, 
         // applying addition twice returns 0. So the result is only non-zero if
@@ -182,7 +188,7 @@ public class FiniteField {
     public static boolean test256()
     {
         final int generator256 = 0x011d; // x^8 + x^4 + x^3 + x^2 + 1. or 100011101
-        FiniteField obj = new FiniteField(generator256);
+        FiniteFieldInt obj = new FiniteFieldInt(generator256);
         boolean allTestsPassed = true;
 
         if ( obj.generator != BinaryHelper.fromBinaryString("100011101") ) {
@@ -191,10 +197,10 @@ public class FiniteField {
             allTestsPassed = false;
         }
 
-        byte aVal = 0x4F;
-        byte invAVal = obj.multiplicativeInverse(aVal);
+        int aVal = 0x4F;
+        int invAVal = obj.multiplicativeInverse(aVal);
 
-        if ( invAVal != (byte)-109 ) {
+        if ( invAVal != 147 ) {
             System.err.println("Inverse test gave wrong value");
             allTestsPassed = false;
         }
@@ -209,23 +215,23 @@ public class FiniteField {
         boolean allTestsPassed = true;
         final int generator32  = 0x25;   // x^5 + x^2 + 1. or 100101
         final int SIZE=32;
-        FiniteField obj = new FiniteField(generator32);
+        FiniteFieldInt obj = new FiniteFieldInt(generator32);
         if ( obj.generator != BinaryHelper.fromBinaryString("100101") ) {
             System.err.println("Wrong generator: Got " + obj.generator +
                     " expected " + BinaryHelper.fromBinaryString("100101") );
             allTestsPassed = false;
         }
 
-        final byte aVal = SIZE / 2 + SIZE /4;
-        byte invAVal = obj.multiplicativeInverse(aVal);
+        final int aVal = SIZE / 2 + SIZE /4;
+        int invAVal = obj.multiplicativeInverse(aVal);
 
-        if ( invAVal != (byte)17 ) {
+        if ( invAVal != (int)17 ) {
             System.err.println("Inverse test gave wrong value");
             allTestsPassed = false;
         }
 
-        if (obj.pow(25) != (byte)BinaryHelper.fromBinaryString("11001")) {
-            System.err.println("Expected alpha^25 == 25. Got : " + obj.pow((byte)25) );
+        if (obj.pow(25) != (int)BinaryHelper.fromBinaryString("11001")) {
+            System.err.println("Expected alpha^25 == 25. Got : " + obj.pow((int)25) );
             allTestsPassed = false;
         }
 
@@ -234,34 +240,41 @@ public class FiniteField {
         return allTestsPassed;
     }
 
-    private boolean testCommon()
+    public boolean testCommon()
     {
         final int SIZE=this.highBit;
         boolean allTestsPassed = true;
 
-        final byte aVal = (byte)(SIZE / 2 + SIZE /4);
+        final int aVal = (int)(SIZE / 2 + SIZE /4);
 
-        if ( this.pow((byte)0) != 1 ) {
-            System.err.println("Expected alpha^0 == 1. Got : " + this.pow((byte)0) );
+        if ( this.pow((int)0) != 1 ) {
+            System.err.println("Expected alpha^0 == 1. Got : " + this.pow((int)0) );
             allTestsPassed = false;
         }
-        if ( this.pow((byte)1) != 2 ) {
-            System.err.println("Expected alpha^1 == 2. Got : " + this.pow((byte)1) );
-            allTestsPassed = false;
-        }
-
-        if (this.pow((byte)2, 12345) != this.pow(12345) ){
-            System.err.println("Unexpected alpha^12345");
+        if ( this.pow((int)1) != 2 ) {
+            System.err.println("Expected alpha^1 == 2. Got : " + this.pow((int)1) );
             allTestsPassed = false;
         }
 
-        if (this.mul((byte)2, this.pow(SIZE-2)) != (byte)1 ){
-            System.err.println("Unexpected pow.");
-            allTestsPassed = false;
+        if ( this.highBit > 2) {
+            if (this.pow((int)2, 12345) != this.pow(12345) ){
+                System.err.println("Unexpected alpha^12345");
+                allTestsPassed = false;
+            }
+    
+            if (this.mul((int)2, this.pow(SIZE-2)) != (int)1 ){
+                System.err.println("Unexpected pow.");
+                allTestsPassed = false;
+            }
         }
 
+        for ( int i=0; i<SIZE; ++i) {
+            if ( this.computePow(i) != this.pow(i) ) {
+                System.err.println("Pow computation failure.");
+            }
+        }
         {
-            byte bVal = this.add(aVal, (byte)1);
+            int bVal = this.add(aVal, (int)1);
             int loga = log(aVal);
             int logb = log(bVal);
             if ( this.mul(aVal, bVal) != this.pow(loga + logb)) {
@@ -278,7 +291,7 @@ public class FiniteField {
             }
         }
         for ( int i=0; i<SIZE; ++i) {
-            byte bvi = (byte)i;
+            int bvi = (int)i;
             boolean found = false;
             for ( int j=0; j<SIZE-1; ++j) {
                 if ( this.powersOfAlpha[j] == bvi) {
@@ -297,18 +310,18 @@ public class FiniteField {
         }
 
         for ( int i=0; i<SIZE; ++i) {
-            byte bvi = (byte)i;
+            int bvi = (int)i;
             for ( int j=0; j<SIZE; ++j) {
-                byte bvj = (byte)j;
-                byte mul1 = this.mul(bvi, bvj);
-                byte mul2 = this.mul(bvj, bvi);
+                int bvj = (int)j;
+                int mul1 = this.mul(bvi, bvj);
+                int mul2 = this.mul(bvj, bvi);
                 if ( mul1 != mul2 ) {
                     System.err.println("Multiplication not associative / distributive / commutative");
                     allTestsPassed = false;
                 }
                 int m1 = Poly2.mul(i, j);
                 int m2 = Poly2.mod(m1, this.generator);
-                byte bm2 = (byte)m2;
+                int bm2 = (int)m2;
                 if ( bm2 != mul1 ) {
                     System.err.println("Multiplication does not match reference implementation");
                     allTestsPassed = false;
@@ -317,12 +330,12 @@ public class FiniteField {
         }
 
         for ( int i=0; i<SIZE; ++i) {
-            byte bv = (byte)i;
-            byte mulVal = this.mul(aVal, bv);
-            byte addVal = this.add(aVal, bv);
-            byte subVal = this.sub(aVal, bv);
-            byte divVal = this.div(mulVal, bv);
-            byte invVal = this.multiplicativeInverse(bv);
+            int bv = (int)i;
+            int mulVal = this.mul(aVal, bv);
+            int addVal = this.add(aVal, bv);
+            int subVal = this.sub(aVal, bv);
+            int divVal = this.div(mulVal, bv);
+            int invVal = this.multiplicativeInverse(bv);
             //System.out.println( "For " + i + ": "
             //        + " * " + BinaryHelper.asBinaryString(mulVal)
             //        + " + " + BinaryHelper.asBinaryString(addVal)
@@ -340,7 +353,7 @@ public class FiniteField {
                 allTestsPassed = false;
             }
 
-            byte inv1 = this.mul(bv, invVal);
+            int inv1 = this.mul(bv, invVal);
             if ( ( inv1 != 1) && (bv != 0) ) {
                 System.err.println("Inverse test failed");
                 allTestsPassed = false;
@@ -351,5 +364,5 @@ public class FiniteField {
         
     }
 
-}
 
+}
