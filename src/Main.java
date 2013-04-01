@@ -14,7 +14,7 @@ public class Main {
         if (!FiniteField.test()) {
             System.err.println("FiniteField test failed");
         }
-        if (!Golay24_12.test()) {
+        if (!BchCoder.test()) {
             System.err.println("BchCodec15_5 test failed");
         }
 

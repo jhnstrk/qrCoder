@@ -1,9 +1,9 @@
 import java.util.ArrayList;
 
 
-public class Golay24_12 {
-    final int codeWordLen = 18;
-    final int dataLen = 6;
+public class BchCoder {
+    final int codeWordLen = 23;
+    final int dataLen = 11;
     final int errorCorrLen = codeWordLen - dataLen;
     final int dataMask = ((1 << dataLen) - 1 );
     final int codeWordEnd = (1 << codeWordLen);
@@ -13,7 +13,7 @@ public class Golay24_12 {
     // genPoly = 3 * 2787 ( 0000000000011 * 0101011100011 )
     final FiniteFieldInt m_gf;
 
-    public Golay24_12() {
+    public BchCoder() {
         //final int generator32  = 0x25;   // x^5 + x^2 + 1. or 100101
         //m_gf = new FiniteFieldInt( generator32 );
         final int generator2pow11  = (1<<11) | (1<<2) | 1;
@@ -39,15 +39,12 @@ public class Golay24_12 {
         // Implementation of the Berlekamp-Massey alg.
         // Calculate the syndromes, checking if they are all zero.
         FiniteFieldInt gf32 = m_gf;
-        // non-primitive element that is the construction of this code. maybe.
-        int [] possBetaPows = {0, 89,  178, 267, 356, 534, 712, 801, 1068,    1157,    1424,    1602 };
-        String finger = new String();
-        for (int i=0; i<possBetaPows.length; ++i) {
-            int powVal = gf32.pow(possBetaPows[i]);
-            finger += this.evaluate(codeWord, powVal, m_gf ) + " ";
-        }
-        System.out.println(finger);
 
+        // non-primitive element that is the construction of this code. maybe.
+        // int [] possBetaPows = {0, 89,  178, 267, 356, 534, 712, 801, 1068,    1157,    1424,    1602 };
+        // int [] minPolys = { 3, 2787, 2787, 2787, 2787 };
+        // 3     :                00011
+        // 2787  : 00000000101011100011
         final int beta = gf32.pow(89);
 
         boolean allZeroSyndrome = true;
@@ -56,12 +53,9 @@ public class Golay24_12 {
         GfPolyInt s = new GfPolyInt( N, gf32 );
         // The zero-order term is zero.
         for (int i=0; i<N; ++i) {
-            int powVal = gf32.pow(beta, i);
-            s.setCoeff(i, this.evaluate(codeWord, powVal, m_gf ) );
-            //System.out.println("pw" + i + "  " + powVal + " s_i="+s.getCoeff(i));
-            //System.out.println(i + " at " + this.evaluate(codeWord, powVal ) );
-            //System.out.println(i + " at " + this.evaluate(codeWord ^ 1, powVal ) );
-            //System.out.println(i + " at " + this.evaluate(codeWord ^ (1<<23), powVal ) );
+            int powVal = gf32.pow( beta, i );
+            int s_i = this.evaluate(codeWord, powVal, m_gf );
+            s.setCoeff(i, s_i);
             if (s.getCoeff(i) != 0) {
                 allZeroSyndrome = false;
             }
@@ -71,7 +65,7 @@ public class Golay24_12 {
             int ret = codeWord >> this.errorCorrLen;     // Drop terms of lowest order.
             return ret;
         }
-
+ 
         GfPolyInt C = new GfPolyInt(1, gf32);
         C.setCoeff(0, (1));
         GfPolyInt B = new GfPolyInt(1, gf32);
@@ -87,10 +81,11 @@ public class Golay24_12 {
                 int tmp = gf32.mul(C.getCoeff(i), s.getCoeff(n-i));
                 d = gf32.add(d, tmp);
             }
+
             if (d == 0) {
                 ++m;
                 continue;
-            } else if (2*L <= N ){
+            } else if (2*L <= n ){
                 GfPolyInt Tmp = C.clonePoly();
 
                 int d_over_b = gf32.div(d, b);
@@ -133,8 +128,8 @@ public class Golay24_12 {
         int ePoly = 0;
 
         for ( int iBpwr : zeroBetaPwrs ) {
-            int x_recip = gf32.pow(beta, -iBpwr);
-            int pwrAlp = gf32.log(x_recip) ; //  / 89;
+            // int x_recip = gf32.pow(beta, -iBpwr);
+            // int pwrAlp = gf32.log(x_recip) ; //  / 89;
             // Because 2047 = 23 *89 we can do
             int pwr = 23 - iBpwr;
 
@@ -168,7 +163,7 @@ public class Golay24_12 {
     {
         boolean allTestsPassed = true;
 
-        Golay24_12 obj = new Golay24_12();
+        BchCoder obj = new BchCoder();
         
         GfPolyInt x_b = new GfPolyInt(2, obj.m_gf);
         x_b.setCoeff(0, 1);
@@ -189,12 +184,12 @@ public class Golay24_12 {
         int testCoded = obj.encode(vIn);
         if ( testCoded != expectedCodeWord) {
             allTestsPassed = false;
-            System.err.println("BchCodec18_6 encoding failed");
+            System.err.println(obj.getClass().getName() + " encoding 7 failed");
         }
         testCoded = obj.encode(31);
         if ( testCoded != BinaryHelper.fromBinaryString("011111001001010000") ) {
             allTestsPassed = false;
-            System.err.println("BchCodec18_6 encoding failed");
+            System.err.println(obj.getClass().getName() + " encoding 31 failed");
         }
 
         for (int i=0; i<6; ++i) {
@@ -214,14 +209,16 @@ public class Golay24_12 {
             System.err.println(obj.getClass().getName() + " decoding failed");
         }
 
-        int corrupted = expectedCodeWord ^ (1 << 17);
+        int corrupted;
+
+        corrupted = expectedCodeWord ^ (1 << 17);
         testDecoded = obj.decode(corrupted);
         if (testDecoded != vIn) {
             allTestsPassed = false;
             System.err.println(obj.getClass().getName() + ": decoding 1 error failed");
         }
 
-        for (int i=0; i<24; ++i) {
+        for (int i=0; i<obj.codeWordLen; ++i) {
             corrupted = expectedCodeWord ^ (1<<i);
             testDecoded = obj.decode(corrupted);
             if (testDecoded != vIn) {
@@ -230,15 +227,15 @@ public class Golay24_12 {
             }
         }
 
-        corrupted = expectedCodeWord ^ 0x000004 ^ 0x020000;
+        corrupted = expectedCodeWord ^ ( (1<<12) | (1<<10) | (1<<0) );
         testDecoded = obj.decode(corrupted);
         if (testDecoded != vIn) {
             allTestsPassed = false;
-            System.err.println(obj.getClass().getName() + ": decoding 2 errors failed");
+            System.err.println(obj.getClass().getName() + ": decoding 3 errors failed");
         }
 
         if ( allTestsPassed ){
-            System.out.println("BchCodec18_6 test passed");
+            System.out.println(obj.getClass().getName() + " test passed");
         }
         return allTestsPassed;
     }
@@ -271,6 +268,42 @@ public class Golay24_12 {
                 fg = testV.quotient;
                 --i;
             }
+        }
+        
+        // Minimal polynomials
+        //FiniteFieldInt gf = new FiniteFieldInt(Integer.parseInt("75",8));
+        //FiniteFieldInt gf = new FiniteFieldInt(Integer.parseInt("100101",2));
+        FiniteFieldInt gf = m_gf;
+        
+        int[] minPolys = new int[5];
+        int prod = 1;
+        final int c = 0; // First power
+        final int primPwr = 89;
+        for (int j=0; j<minPolys.length; ++j) {
+            int betaPw = gf.pow(j*primPwr + c);
+            for (int i=1; i<(gf.highBit << 1);++i) {
+                if ( this.evaluate(i, betaPw, gf) == 0 ) {
+                    System.out.println("Minimal poly " + j + " = " + i + "  : " + BinaryHelper.asBinaryString(i, 20));
+                    minPolys[j] = i;
+                    boolean isAlreadyThere = false;
+                    for (int k=0;k<j;++k) {
+                        if (minPolys[k] == i){
+                            isAlreadyThere = true;
+                            break;
+                        }
+                    }
+                    if (!isAlreadyThere) {
+                        //System.out.println("Accumulating poly");
+                        prod = Poly2.mul(prod, i);
+                    }
+                    break;
+                }
+            }
+        }
+        System.out.println("Product of minimal polys " + prod + " = " + BinaryHelper.asBinaryString(prod, 31));
+
+        for (int i=0; i<minPolys.length; ++i) {
+            System.out.println("gen(a^" + (i+c) + ") = " + this.evaluate(prod, gf.pow(i*primPwr+c), gf) );
         }
     }
     

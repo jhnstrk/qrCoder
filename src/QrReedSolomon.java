@@ -74,7 +74,7 @@ public class QrReedSolomon {
             if (d == 0) {
                 ++m;
                 continue;
-            } else if (2*L <= N ){
+            } else if (2*L <= n ){
                 GfPoly Tmp = C.clonePoly();
 
                 byte d_over_b = gf256.div(d, b);
